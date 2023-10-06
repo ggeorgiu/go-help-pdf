@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go-help-pdf/internal/compress"
 	"go-help-pdf/internal/lovepdf"
 	"log/slog"
 	"os"
@@ -12,9 +13,9 @@ import (
 
 type appOpts struct {
 	projectKey string
-	secretKey  string
 	workingDir string
 	outputDir  string
+	baseURL    string
 }
 
 var opts = appOpts{}
@@ -30,6 +31,7 @@ func main() {
 					Name:        "project-key",
 					Destination: &opts.projectKey,
 					EnvVars:     []string{"PDF_API_PROJECT_KEY"},
+					Required:    true,
 					Hidden:      true,
 				},
 				&cli.StringFlag{
@@ -44,6 +46,12 @@ func main() {
 					EnvVars:     []string{"PDF_API_OUTPUT_DIR"},
 					Value:       "/Users/gabrielgeorgiu/Projects/learning/go-help-pdf/pdfc/",
 				},
+				&cli.StringFlag{
+					Name:        "base-url",
+					Destination: &opts.baseURL,
+					EnvVars:     []string{"PDF_API_BASE_URL"},
+					Value:       "https://api.ilovepdf.com/v1/",
+				},
 			},
 			Action: func(c *cli.Context) error {
 				return compressFileCmd(c.Context, c.Args().Get(0))
@@ -56,57 +64,23 @@ func main() {
 	}
 }
 
-func compressFileCmd(ctx context.Context, fileName string) error {
-	pdfClient := lovepdf.New("https://api.ilovepdf.com/v1/", opts.projectKey)
-
-	auth, err := pdfClient.Authenticate(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to authenticate, err: %w", err)
+func compressFileCmd(ctx context.Context, filename string) error {
+	if filename == "" {
+		return fmt.Errorf("invalid filename")
 	}
 
-	rsd := lovepdf.ResourceStartData{
-		Bearer: auth.Token,
-		Tool:   lovepdf.ServerToolCompress,
-	}
-	startResp, err := pdfClient.ResourceStart(ctx, &rsd)
-	if err != nil {
-		return fmt.Errorf("failed to start resource, err: %w", err)
+	pdfClient := lovepdf.New(opts.baseURL, opts.projectKey)
+	svc := compress.New(pdfClient)
+
+	hd := compress.HandleData{
+		FileName:   filename,
+		WorkingDir: opts.workingDir,
+		OutputDir:  opts.outputDir,
 	}
 
-	ud := lovepdf.UploadData{
-		Bearer:   auth.Token,
-		Task:     startResp.Task,
-		Server:   startResp.Server,
-		FilePath: fmt.Sprintf("%s%s", opts.workingDir, fileName),
-	}
-	uploadResp, err := pdfClient.Upload(ctx, &ud)
+	err := svc.HandleFile(ctx, &hd)
 	if err != nil {
-		fmt.Println(uploadResp)
-		return fmt.Errorf("failed to upload file: %s, err: %w", fileName, err)
-	}
-
-	pd := lovepdf.ProcessData{
-		Bearer:         auth.Token,
-		Server:         startResp.Server,
-		Task:           startResp.Task,
-		ServerFilename: uploadResp.ServerFilename,
-		Tool:           lovepdf.ServerToolCompress,
-		FileName:       fileName,
-	}
-	processResponse, err := pdfClient.Process(ctx, &pd)
-	if err != nil {
-		return fmt.Errorf("failed to process file: %s, err: %w", fileName, err)
-	}
-
-	dd := lovepdf.DownloadData{
-		Server:   startResp.Server,
-		Task:     startResp.Task,
-		Bearer:   auth.Token,
-		Filepath: fmt.Sprintf("%s%s", opts.outputDir, processResponse.DownloadFilename),
-	}
-	err = pdfClient.Download(ctx, &dd)
-	if err != nil {
-		return fmt.Errorf("failed to download file, %s, err: %w", processResponse.DownloadFilename, err)
+		return fmt.Errorf("failed to handle file: %s, err: %w", filename, err)
 	}
 
 	return nil
