@@ -44,7 +44,6 @@ func (s *Service) HandleFile(ctx context.Context, hd *HandleData) error {
 	}
 	uploadResp, err := s.cli.Upload(ctx, &ud)
 	if err != nil {
-		fmt.Println(uploadResp)
 		return fmt.Errorf("failed to upload file: %s, err: %w", hd.FileName, err)
 	}
 
