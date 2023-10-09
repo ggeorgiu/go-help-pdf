@@ -3,22 +3,15 @@ package compress
 import (
 	"context"
 	"fmt"
+
 	"go-help-pdf/internal/lovepdf"
 )
 
-type PDFClient interface {
-	Authenticate(context.Context) (*lovepdf.AuthResponse, error)
-	ResourceStart(context.Context, *lovepdf.ResourceStartData) (*lovepdf.ResourceStartResponse, error)
-	Upload(context.Context, *lovepdf.UploadData) (*lovepdf.UploadResponse, error)
-	Process(context.Context, *lovepdf.ProcessData) (*lovepdf.ProcessResponse, error)
-	Download(context.Context, *lovepdf.DownloadData) error
-}
-
 type Service struct {
-	cli PDFClient
+	cli *lovepdf.HTTPClient
 }
 
-func New(cli PDFClient) *Service {
+func New(cli *lovepdf.HTTPClient) *Service {
 	return &Service{cli: cli}
 }
 

@@ -19,14 +19,14 @@ type HTTPClient struct {
 	client    http.Client
 }
 
-func New(baseURL string, publicKey string) *HTTPClient {
+func New(baseURL string, publicKey string) HTTPClient {
 	c := HTTPClient{
 		baseURL:   baseURL,
 		publicKey: publicKey,
 		client:    http.Client{},
 	}
 
-	return &c
+	return c
 }
 
 type AuthRequest struct {

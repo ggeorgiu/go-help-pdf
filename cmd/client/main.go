@@ -28,6 +28,12 @@ func main() {
 			Name: "compress-file",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
+					Name:        "base-url",
+					Destination: &opts.baseURL,
+					EnvVars:     []string{"PDF_API_BASE_URL"},
+					Value:       "https://api.ilovepdf.com/v1/",
+				},
+				&cli.StringFlag{
 					Name:        "project-key",
 					Destination: &opts.projectKey,
 					EnvVars:     []string{"PDF_API_PROJECT_KEY"},
@@ -45,12 +51,6 @@ func main() {
 					Destination: &opts.outputDir,
 					EnvVars:     []string{"PDF_API_OUTPUT_DIR"},
 					Value:       "/Users/gabrielgeorgiu/Projects/learning/go-help-pdf/pdfc/",
-				},
-				&cli.StringFlag{
-					Name:        "base-url",
-					Destination: &opts.baseURL,
-					EnvVars:     []string{"PDF_API_BASE_URL"},
-					Value:       "https://api.ilovepdf.com/v1/",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -70,7 +70,7 @@ func compressFileCmd(ctx context.Context, filename string) error {
 	}
 
 	pdfClient := lovepdf.New(opts.baseURL, opts.projectKey)
-	svc := compress.New(pdfClient)
+	svc := compress.New(&pdfClient)
 
 	hd := compress.HandleData{
 		FileName:   filename,
